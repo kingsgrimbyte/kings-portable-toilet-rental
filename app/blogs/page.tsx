@@ -1,59 +1,118 @@
 import Image from "next/image";
 import React from "react";
-import blogData from "@/components/Content/blogs.json";
 import BlogPosts from "../components/Widgets/BlogPosts";
 import ContactInfo from "@/components/Content/ContactInfo.json";
 import Navbar from "../components/Navbar";
+import { headers } from "next/headers";
+import contactContent from "@/app/Data/content";
+const blogsMetas: any = contactContent.locationPageContent;
+// Force the page to be dynamic
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
+async function getBlogData() {
+  // console.log("getBlogData called");
+  const headersList = headers();
+  const blogProtocol: any = headersList.get("x-forwarded-proto") || "http";
+  const host = headersList.get("host");
+  const baseUrl = `${blogProtocol}://${host}`;
+  // console.log("protocol   ===", blogProtocol);
+  // console.log("host   ===", host);
+  const res = await fetch(`${baseUrl}/api/blogs`, {
+    cache: "no-store",
+  });
+  // console.log("res   ===", res);
+  return res.json();
+}
 export async function generateMetadata() {
+  const meta = JSON.parse(
+    JSON.stringify(blogsMetas.blogMetas)
+      .split("[location]")
+      .join(ContactInfo.location)
+      .split("[phone]")
+      .join(ContactInfo.No),
+  );
   return {
-    title: "Protect Your Home and Business with Trusted Roofing Services",
-    description:
-      "With decades of experience, we ensure your roof protects your home or business while delivering superior craftsmanship and care.",
+    title: meta.metaTitle,
+    description: meta.metaDescription,
     alternates: {
-      canonical: `${ContactInfo.baseUrl}blogs`,
+      canonical: `${ContactInfo.baseUrl}blogs/`,
     },
   };
 }
 
-export const revalidate = 60;
-
 // Function to group and sort data by location
-function groupAndSortBycatagory(data: any) {
+function groupAndSortBycategory(data: any[]) {
   const groupedData = data.reduce((acc: any, item: any) => {
-    const catagory = item.catagory;
-    if (!acc[catagory]) {
-      acc[catagory] = [];
+    const category = item.category;
+    if (!acc[category]) {
+      acc[category] = [];
     }
-    acc[catagory].push(item);
+    acc[category].push(item);
     return acc;
   }, {});
-  const sortedcatagorys = Object.keys(groupedData).sort();
-  const sortedOutput = sortedcatagorys.reduce((acc: any, catagory) => {
-    acc[catagory] = groupedData[catagory];
+  const sortedcategorys = Object.keys(groupedData).sort();
+  const sortedOutput = sortedcategorys.reduce((acc: any, category) => {
+    acc[category] = groupedData[category];
     return acc;
   }, {});
 
   return sortedOutput;
 }
+
+
+
 const page = async () => {
-  // const data: any = await fetch ("https://api.npoint.io/3702f240e7018bd24e18");
-  // const jsonData = await data.json();
-  // console.log (jsonData);
-  const sortedDataBycatagory = groupAndSortBycatagory(blogData);
-  const catagorys = Object.keys(sortedDataBycatagory);
+  let blogData: any[] = [];
+  let notFound = false;
+  let currentDate = "";
+  try {
+    const data = await getBlogData();
+    if (!data || !data.blogs) {
+      notFound = true;
+      currentDate = data?.currentDate;
+    } else {
+      blogData = data.blogs;
+      currentDate = data.currentDate;
+      if (!blogData.length) {
+        notFound = true;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    notFound = true;
+  }
+
+  if (notFound || blogData.length === 0) {
+    return (
+      <div className="">
+        <Navbar />
+        <div className="mx-auto max-w-[1905px] p-8 text-center text-lg">
+          <p>No blogs are currently published.</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Check back later for new content!
+          </p>
+          {currentDate && (
+            <p className="mt-1 text-xs text-gray-500">
+              Current date: {currentDate}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const sortedDataBycategory = groupAndSortBycategory(blogData);
+  const categorys = Object.keys(sortedDataBycategory);
+
   return (
     <div className="">
       <Navbar />
-    
-    <div className="overflow-hidden ">
-      <div className="relative -mt-14 duration-150 ease-in-out md:mt-0"></div>
-      <div className="mx-auto max-w-[1905px]">
-        {/* <Navbar /> */}
-        {/* Content */}
-        <BlogPosts postData={blogData} catagorys={catagorys} />
+      <div className="overflow-hidden">
+        <div className="mx-auto max-w-[1905px]">
+          <BlogPosts postData={blogData} categorys={categorys} />
+        </div>
       </div>
-    </div>
     </div>
   );
 };

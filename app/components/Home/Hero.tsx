@@ -2,24 +2,49 @@ import Image from "next/image";
 import Banner from "./Banner";
 import WhyChoose from "./WhyChoose";
 import HourCta from "./HourCta";
-import homeData from "@/components/Content/home.json";
 import Faq from "./Faq";
 import Service from "@/app/components/Home/Service";
 import Affordable from "./Affordable";
 import ProcessWidget from "../Widgets/ProcessWidget";
-import AreaWeServe from "../Widgets/AreaWeServe";
-import content from "@/components/Content/subDomainUrlContent.json";
 import ReviewWidget from "../Widgets/ReviewWidget";
 import Navbar from "../Navbar";
-import ContactInfo from "@/components/Content/ContactInfo.json";
 import Link from "next/link";
+
+import contactContent from "@/app/Data/content";
+import SubdomainContent from "@/app/Data/FinalContent";
 import PortaPottyCalculator from "../Widgets/Calculator";
+
+const ContactInfo: any = contactContent.contactContent;
+const homeData: any = contactContent.homePageContent;
+const content: any = SubdomainContent.subdomainData;
 
 const Hero = () => {
   const cityData: any = content;
   const slugs: any = Object.keys(cityData).map((key) => cityData[key]);
+   const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: homeData.faq.map((faq: any) => ({
+      "@type": "Question",
+      name: faq?.FAQ?.split("[location]").join(
+        ContactInfo.location.split(",")[0].trim(),
+      ),
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq?.Answer?.split("[location]").join(
+          ContactInfo.location.split(",")[0].trim(),
+        ),
+      },
+    })),
+  };
   return (
     <div className="">
+       {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Navbar />
       <div className="w-screen overflow-hidden  md:flex md:w-full md:flex-col md:items-center md:justify-center">
         <div className="w-full overflow-hidden text-lg  print:hidden  dark:bg-white dark:text-black">
@@ -28,8 +53,11 @@ const Hero = () => {
             h1={homeData.h1Banner}
             image={homeData.bannerImage}
             header={homeData.bannerQuote}
-            p1={`${homeData?.metaDescription?.split("[location]").join( ContactInfo.location)
-                        ?.split("[phone]").join(ContactInfo.No)}.`}
+            p1={`${homeData?.metaDescription
+              ?.split("[location]")
+              .join(ContactInfo.location)
+              ?.split("[phone]")
+              .join(ContactInfo.No)}`}
           />
           {/* poster */}
           {/* Section 1 */}
@@ -72,14 +100,14 @@ const Hero = () => {
               <Image
                 height={10000}
                 width={10000}
-                src={`${homeData.h2Image}`}
+                src={`${homeData.h3Image}`}
                 unoptimized={true}
                 className=" h-full w-full rounded-lg object-cover shadow-lg"
                 alt={
-                  homeData.h2Image.split("/").pop()?.split(".")[0] || "image"
+                  homeData.h3Image.split("/").pop()?.split(".")[0] || "image"
                 }
                 title={
-                  homeData.h2Image.split("/").pop()?.split(".")[0] || "image"
+                  homeData.h3Image.split("/").pop()?.split(".")[0] || "image"
                 }
               />
             </div>
@@ -92,10 +120,10 @@ const Hero = () => {
             </div>
           </div>
           {/* Section 1 */}
-          <PortaPottyCalculator/>
+          <PortaPottyCalculator />
           {/* Area we Serve */}
           <div className="mx-auto mt-14 max-w-[95rem] md:mt-20">
-            <div className="mt-10 flex md:h-96 rounded-xl  bg-white  shadow-2xl md:mb-10">
+            <div className="mt-10 flex rounded-xl bg-white  shadow-2xl  md:mb-10 md:h-96">
               <div className="md:w-[87%]">
                 <div className="mt-4 p-1 text-center text-2xl font-bold text-main">
                   We Proudly Serve{" "}
@@ -108,7 +136,7 @@ const Hero = () => {
                     .map((City: any, index: number) => {
                       return (
                         <div className="" key={index}>
-                          <a
+                          <Link
                             href={`https://${City.slug}.${ContactInfo.host}`}
                             className="text-center"
                           >
@@ -118,7 +146,7 @@ const Hero = () => {
                             >
                               {City.name}
                             </button>
-                          </a>
+                          </Link>
                         </div>
                       );
                     })}
@@ -139,7 +167,7 @@ const Hero = () => {
           <div className="mt-14 md:mt-20"></div>
           {/* CTA */}
           {/* FAQ */}
-          <Faq />
+          <Faq data={homeData?.faq}/>
           {/* FAQ */}
           {/* Review */}
           <ReviewWidget />
